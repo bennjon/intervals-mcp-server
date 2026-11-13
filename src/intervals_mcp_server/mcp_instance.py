@@ -32,6 +32,10 @@ def transport_security_from_env() -> TransportSecuritySettings | None:
     )
 
 
+def _env_flag(name: str) -> bool:
+    return os.getenv(name, "").strip().lower() in ("1", "true", "yes", "on")
+
+
 # FastMCP's constructor defaults override FASTMCP_HOST/FASTMCP_PORT, so read them here.
 mcp: FastMCP = FastMCP(  # pylint: disable=invalid-name
     "intervals-icu",
@@ -39,4 +43,8 @@ mcp: FastMCP = FastMCP(  # pylint: disable=invalid-name
     host=os.getenv("FASTMCP_HOST", "127.0.0.1"),
     port=int(os.getenv("FASTMCP_PORT", "8000")),
     transport_security=transport_security_from_env(),
+    # Streamable HTTP only: plain JSON replies instead of an SSE stream, and no
+    # Mcp-Session-Id bookkeeping. Some hosted clients cope better with these.
+    json_response=_env_flag("FASTMCP_JSON_RESPONSE"),
+    stateless_http=_env_flag("FASTMCP_STATELESS_HTTP"),
 )
