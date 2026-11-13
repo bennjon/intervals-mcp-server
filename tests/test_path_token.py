@@ -69,3 +69,27 @@ async def test_real_sse_app_routes_message_endpoint_behind_token():
     # Reaches the MCP transport (unknown session) rather than the gate's 404.
     assert inside.status_code != 404 or inside.text != "Not Found"
     assert outside.status_code == 404 and outside.text == "Not Found"
+
+
+def test_allowed_hosts_unset_keeps_fastmcp_defaults(monkeypatch):
+    from intervals_mcp_server.mcp_instance import transport_security_from_env
+
+    monkeypatch.delenv("MCP_ALLOWED_HOSTS", raising=False)
+    assert transport_security_from_env() is None
+
+
+@pytest.mark.asyncio
+async def test_allowed_hosts_accepts_listed_host_only(monkeypatch):
+    from intervals_mcp_server.mcp_instance import transport_security_from_env
+
+    monkeypatch.setenv("MCP_ALLOWED_HOSTS", "box.tail1234.ts.net")
+    sec = transport_security_from_env()
+    assert sec.enable_dns_rebinding_protection
+    app = PathTokenGate(FastMCP("t", transport_security=sec).sse_app(), TOKEN)
+    url = f"/{TOKEN}/messages/?session_id=00000000000000000000000000000000"
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="https://box.tail1234.ts.net") as c:
+        ok = await c.post(url, json={})
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="https://evil.example") as c:
+        bad = await c.post(url, json={})
+    assert ok.status_code != 421 and "Invalid Host" not in ok.text
+    assert bad.status_code == 421 or "Invalid Host" in bad.text
