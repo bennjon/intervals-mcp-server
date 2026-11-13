@@ -361,7 +361,7 @@ async def get_activity_messages(activity_id: str, api_key: str | None = None) ->
     return output
 
 
-@mcp.tool()
+# hardened: tool registration removed
 async def add_activity_message(
     activity_id: str,
     content: str,

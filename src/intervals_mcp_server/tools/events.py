@@ -181,7 +181,7 @@ async def get_event_by_id(
     return format_event_details(result)
 
 
-@mcp.tool()
+# hardened: tool registration removed
 async def delete_event(
     event_id: str,
     athlete_id: str | None = None,
@@ -230,7 +230,7 @@ async def _fetch_events_for_deletion(
     return events, None
 
 
-@mcp.tool()
+# hardened: tool registration removed
 async def delete_events_by_date_range(
     start_date: str,
     end_date: str,
@@ -356,7 +356,7 @@ async def add_or_update_event(  # pylint: disable=too-many-arguments,too-many-po
         return f"Error: {e}"
 
 
-@mcp.tool()
+# hardened: tool registration removed
 async def add_or_update_note(
     name: str,
     description: str,

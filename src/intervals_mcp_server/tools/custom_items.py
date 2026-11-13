@@ -85,7 +85,7 @@ async def get_custom_item_by_id(
     return format_custom_item_details(result)
 
 
-@mcp.tool()
+# hardened: tool registration removed
 async def create_custom_item(
     name: str,
     item_type: str,
@@ -141,7 +141,7 @@ async def create_custom_item(
     return f"Successfully created custom item:\n\n{format_custom_item_details(result)}"
 
 
-@mcp.tool()
+# hardened: tool registration removed
 async def update_custom_item(
     item_id: int,
     athlete_id: str | None = None,
@@ -203,7 +203,7 @@ async def update_custom_item(
     return f"Successfully updated custom item:\n\n{format_custom_item_details(result)}"
 
 
-@mcp.tool()
+# hardened: tool registration removed
 async def delete_custom_item(
     item_id: int,
     athlete_id: str | None = None,
