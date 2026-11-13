@@ -9,6 +9,7 @@ import logging
 
 from mcp.server.fastmcp import FastMCP  # pylint: disable=import-error
 
+from intervals_mcp_server.path_token import PathTokenGate
 from intervals_mcp_server.utils.types import TransportAliases
 
 logger = logging.getLogger("intervals_icu_mcp_server")
@@ -58,6 +59,8 @@ def start_server(mcp_instance: FastMCP, transport: TransportAliases) -> None:
     if transport == TransportAliases.STDIO:
         logger.info("Starting MCP server with stdio transport.")
         mcp_instance.run()
+    elif transport == TransportAliases.SSE and os.getenv("MCP_PATH_TOKEN"):
+        _run_sse_behind_path_token(mcp_instance, os.environ["MCP_PATH_TOKEN"])
     elif transport == TransportAliases.SSE:
         mount_path = os.getenv("MCP_SSE_MOUNT_PATH")
         logger.info(
@@ -76,3 +79,24 @@ def start_server(mcp_instance: FastMCP, transport: TransportAliases) -> None:
             mcp_instance.settings.streamable_http_path,
         )
         mcp_instance.run(transport="streamable-http")
+
+
+def _run_sse_behind_path_token(mcp_instance: FastMCP, token: str) -> None:
+    """Serve the SSE app only under /<token>/ (see path_token.py)."""
+    import uvicorn  # pylint: disable=import-outside-toplevel
+
+    app = PathTokenGate(mcp_instance.sse_app(), token)
+    logger.info(
+        "Starting MCP server with SSE transport behind a path token at http://%s:%s/<token>%s.",
+        mcp_instance.settings.host,
+        mcp_instance.settings.port,
+        mcp_instance.settings.sse_path,
+    )
+    # access_log=False: request paths contain the token and must not reach the logs.
+    uvicorn.run(
+        app,
+        host=mcp_instance.settings.host,
+        port=mcp_instance.settings.port,
+        log_level=mcp_instance.settings.log_level.lower(),
+        access_log=False,
+    )
