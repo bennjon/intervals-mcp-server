@@ -93,3 +93,14 @@ async def test_allowed_hosts_accepts_listed_host_only(monkeypatch):
         bad = await c.post(url, json={})
     assert ok.status_code != 421 and "Invalid Host" not in ok.text
     assert bad.status_code == 421 or "Invalid Host" in bad.text
+
+
+@pytest.mark.asyncio
+async def test_streamable_http_route_only_under_token():
+    """POST /<token>/mcp reaches the Streamable HTTP route; /mcp without the token is 404."""
+    app = PathTokenGate(FastMCP("t").streamable_http_app(), TOKEN)
+    async with _client(app) as c:
+        outside = await c.post("/mcp", json={})
+        wrong = await c.post(f"/{TOKEN[:-1]}/mcp", json={})
+    assert outside.status_code == 404 and outside.text == "Not Found"
+    assert wrong.status_code == 404 and wrong.text == "Not Found"
